@@ -7,15 +7,21 @@ import tailwindcss from '@tailwindcss/vite'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [tailwindcss(), react()],
+  base: mode === "extension" ? "./" : "/",
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src'),
     },
   },
   build: {
+    outDir: mode === "extension" ? path.resolve(__dirname, "../renderer") : "dist",
+    emptyOutDir: true,
     rollupOptions: {
+      input: mode === "extension"
+        ? path.resolve(__dirname, "renderer.html")
+        : path.resolve(__dirname, "index.html"),
       output: {
         manualChunks(id) {
           if (!id.includes("node_modules")) {
@@ -47,4 +53,4 @@ export default defineConfig({
       },
     },
   },
-})
+}))
