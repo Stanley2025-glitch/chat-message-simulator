@@ -20,7 +20,10 @@ export default defineConfig(({ mode }) => ({
     emptyOutDir: true,
     rollupOptions: {
       input: mode === "extension"
-        ? path.resolve(__dirname, "renderer.html")
+        ? {
+            renderer: path.resolve(__dirname, "renderer.html"),
+            gallery: path.resolve(__dirname, "gallery.html"),
+          }
         : path.resolve(__dirname, "index.html"),
       output: {
         manualChunks(id) {

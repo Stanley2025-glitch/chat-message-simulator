@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { ChatLayout } from "@/components/layout/ChatLayout"
+import { ArtifactCanvas } from "@/artifacts/ArtifactCanvas"
+import { getArtifactDefinition, isArtifactType } from "@/artifacts/registry"
 import { layoutConfigs } from "@/constants/layouts"
 import { exportNodeToImageSequence } from "@/utils/export"
+import type { ArtifactData, ArtifactType } from "@/artifacts/types"
 import type { Conversation } from "@/types/conversation"
 import type { LayoutId, ThemeId } from "@/types/layout"
 import type { ExportCaptureMode, ExportFormat, ExportSettings } from "@/store/conversationStore"
@@ -14,7 +17,11 @@ type RuntimeMessage = {
 
 export interface RenderRequest {
   requestId: string
-  conversation: Conversation
+  conversation?: Conversation
+  type?: ArtifactType
+  variant?: string
+  maskSeed?: string
+  data?: ArtifactData
   layoutId?: LayoutId
   themeId?: ThemeId
   activeParticipantId?: string
@@ -24,6 +31,11 @@ export interface RenderRequest {
   backgroundColor?: string
   exportSettings?: Partial<ExportSettings>
 }
+
+const isArtifactRenderRequest = (
+  request: RenderRequest | null,
+): request is RenderRequest & { type: ArtifactType; data: ArtifactData } =>
+  Boolean(request && isArtifactType(request.type) && request.data && typeof request.data === "object")
 
 type RendererImage = {
   name: string
@@ -105,11 +117,11 @@ const getScreenScrollTops = (viewportHeight: number, contentHeight: number) => {
   return positions
 }
 
-const fileNameFor = (format: ExportFormat, index: number, count: number) => {
+const fileNameFor = (format: ExportFormat, index: number, count: number, basename = "nikodem-chat") => {
   const extension = format === "jpeg" ? "jpg" : "png"
   return count > 1
-    ? `nikodem-chat-${String(index + 1).padStart(2, "0")}.${extension}`
-    : `nikodem-chat.${extension}`
+    ? `${basename}-${String(index + 1).padStart(2, "0")}.${extension}`
+    : `${basename}.${extension}`
 }
 
 const sendRuntimeMessage = async (message: unknown) => {
@@ -132,19 +144,23 @@ export const ExtensionRendererApp = () => {
   const probeScrollRef = useRef<HTMLDivElement | null>(null)
   const probeContentRef = useRef<HTMLDivElement | null>(null)
 
-  const settings = useMemo<ExportSettings>(
-    () => ({ ...defaultExportSettings, ...(request?.exportSettings || {}) }),
-    [request],
-  )
+  const artifactRequest = isArtifactRenderRequest(request) ? request : null
+  const artifactDefinition = artifactRequest ? getArtifactDefinition(artifactRequest.type) : undefined
+  const settings = useMemo<ExportSettings>(() => {
+    const artifactDefaults = artifactDefinition
+      ? { width: artifactDefinition.width, height: artifactDefinition.height, format: "png" as const, captureMode: "viewport" as const }
+      : {}
+    return { ...defaultExportSettings, ...artifactDefaults, ...(request?.exportSettings || {}), ...(artifactDefinition ? { format: "png" as const, captureMode: "viewport" as const } : {}) }
+  }, [artifactDefinition, request])
   const layout = layoutConfigs.find((entry) => entry.id === (request?.layoutId || "whatsapp")) ?? layoutConfigs[0]
   const theme = layout.themes.find((entry) => entry.id === (request?.themeId || "light")) ?? layout.themes[0]
-  const conversation = request?.conversation
+  const conversation = artifactRequest ? undefined : request?.conversation
   const activeParticipantId = request?.activeParticipantId || conversation?.participants[0]?.id || ""
   const captureMode: ExportCaptureMode = settings.captureMode
 
   useEffect(() => {
     const listener = (message: RuntimeMessage) => {
-      if (message.type !== "XCS_RENDER_CHAT" || !message.request) return
+      if ((message.type !== "XCS_RENDER_CHAT" && message.type !== "XCS_RENDER_ARTIFACT") || !message.request) return
       const rendererRequestId = rendererRequestIdFromUrl()
       if (rendererRequestId && message.request.requestId !== rendererRequestId) return
       setError("")
@@ -156,7 +172,7 @@ export const ExtensionRendererApp = () => {
       return { ok: true }
     }
     const windowListener = (event: MessageEvent<RuntimeMessage>) => {
-      if (event.data?.type === "XCS_RENDER_CHAT" && event.data.request) listener(event.data)
+      if ((event.data?.type === "XCS_RENDER_CHAT" || event.data?.type === "XCS_RENDER_ARTIFACT") && event.data.request) listener(event.data)
     }
     const runtime = getExtensionBrowser()?.runtime
     runtime?.onMessage?.addListener(listener)
@@ -172,7 +188,7 @@ export const ExtensionRendererApp = () => {
   }, [])
 
   useEffect(() => {
-    if (!request || !conversation) return
+    if (!request) return
     let cancelled = false
 
     const render = async () => {
@@ -187,12 +203,14 @@ export const ExtensionRendererApp = () => {
         const contentHeight = probeContent?.scrollHeight || settings.height
         const viewportHeight = probeScroll?.clientHeight || settings.height
         const chromeHeight = Math.max(0, probeHeight - viewportHeight)
-        const fullHeight = Math.max(settings.height, Math.ceil(chromeHeight + contentHeight))
+        const fullHeight = artifactRequest
+          ? settings.height
+          : Math.max(settings.height, Math.ceil(chromeHeight + contentHeight))
         const resolvedHeight = captureMode === "full" ? fullHeight : settings.height
         const resolvedSettings = { ...settings, height: resolvedHeight }
         const screenScrollTops = getScreenScrollTops(viewportHeight, contentHeight)
         const renderOptions =
-          captureMode === "screens"
+          !artifactRequest && captureMode === "screens"
             ? screenScrollTops.map((top) => ({ scrollRootOverrides: [{ top }] }))
             : [{ offset: { x: 0, y: 0 } }]
 
@@ -211,7 +229,7 @@ export const ExtensionRendererApp = () => {
         const images: RendererImage[] = []
         for (const [index, dataUrl] of dataUrls.entries()) {
           images.push({
-            name: fileNameFor(settings.format, index, dataUrls.length),
+            name: fileNameFor(settings.format, index, dataUrls.length, artifactRequest?.variant ? `${artifactRequest.type}-${artifactRequest.variant}` : artifactRequest?.type || "nikodem-chat"),
             mimeType: settings.format === "jpeg" ? "image/jpeg" : "image/png",
             buffer: await dataUrlToArrayBuffer(dataUrl),
           })
@@ -239,45 +257,49 @@ export const ExtensionRendererApp = () => {
     return () => {
       cancelled = true
     }
-  }, [captureMode, conversation, request, settings])
+  }, [artifactRequest, captureMode, request, settings])
 
-  if (!conversation) {
+  if (!request) {
     return <div data-xcs-renderer-state="ready">{error}</div>
   }
 
-  const commonProps = {
-    conversation,
-    layout,
-    theme,
-    showChrome: request.showChrome !== false,
-    activeParticipantId,
-    backgroundImageUrl: request.backgroundImageUrl || "",
-    backgroundImageOpacity: request.backgroundImageOpacity ?? 0.35,
-    backgroundColor: request.backgroundColor || "",
-  }
+  const commonProps = conversation
+    ? {
+        conversation,
+        layout,
+        theme,
+        showChrome: request.showChrome !== false,
+        activeParticipantId,
+        backgroundImageUrl: request.backgroundImageUrl || "",
+        backgroundImageOpacity: request.backgroundImageOpacity ?? 0.35,
+        backgroundColor: request.backgroundColor || "",
+      }
+    : null
 
   return (
     <>
-      <div
-        ref={probeRef}
-        aria-hidden="true"
-        style={{
-          position: "fixed",
-          left: "-10000px",
-          top: 0,
-          width: settings.width,
-          height: settings.height,
-          pointerEvents: "none",
-          opacity: 0,
-        }}
-      >
-        <ChatLayout
-          {...commonProps}
-          conversationMode="scroll"
-          conversationContainerRef={probeScrollRef}
-          conversationContentRef={probeContentRef}
-        />
-      </div>
+      {conversation && commonProps ? (
+        <div
+          ref={probeRef}
+          aria-hidden="true"
+          style={{
+            position: "fixed",
+            left: "-10000px",
+            top: 0,
+            width: settings.width,
+            height: settings.height,
+            pointerEvents: "none",
+            opacity: 0,
+          }}
+        >
+          <ChatLayout
+            {...commonProps}
+            conversationMode="scroll"
+            conversationContainerRef={probeScrollRef}
+            conversationContentRef={probeContentRef}
+          />
+        </div>
+      ) : null}
       <div
         ref={renderRef}
         data-xcs-render-target="true"
@@ -289,10 +311,14 @@ export const ExtensionRendererApp = () => {
           height: settings.height,
         }}
       >
-        <ChatLayout
-          {...commonProps}
-          conversationMode={captureMode === "full" ? "expanded" : "scroll"}
-        />
+        {artifactRequest ? (
+          <ArtifactCanvas type={artifactRequest.type} data={artifactRequest.data} variant={artifactRequest.variant} maskSeed={artifactRequest.maskSeed} />
+        ) : conversation && commonProps ? (
+          <ChatLayout
+            {...commonProps}
+            conversationMode={captureMode === "full" ? "expanded" : "scroll"}
+          />
+        ) : null}
       </div>
     </>
   )
