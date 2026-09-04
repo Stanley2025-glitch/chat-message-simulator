@@ -1,5 +1,17 @@
 import { format } from "date-fns"
+import { pl } from "date-fns/locale/pl"
 import type { Conversation } from "@/types/conversation"
+
+const formatPolishDate = (timestamp: string, pattern: string) => {
+  const date = new Date(timestamp)
+  if (Number.isNaN(date.getTime())) return ""
+
+  try {
+    return format(date, pattern, { locale: pl })
+  } catch {
+    return ""
+  }
+}
 
 export const generateId = () => {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -9,27 +21,15 @@ export const generateId = () => {
 }
 
 export const formatTimestamp = (timestamp: string) => {
-  try {
-    return format(new Date(timestamp), "p")
-  } catch {
-    return ""
-  }
+  return formatPolishDate(timestamp, "HH:mm")
 }
 
 export const formatDateSeparator = (timestamp: string) => {
-  try {
-    return format(new Date(timestamp), "MMM d, yyyy")
-  } catch {
-    return ""
-  }
+  return formatPolishDate(timestamp, "PP")
 }
 
 export const formatInstagramDateSeparator = (timestamp: string) => {
-  try {
-    return format(new Date(timestamp), "d MMM 'AT' HH:mm").toUpperCase()
-  } catch {
-    return ""
-  }
+  return formatPolishDate(timestamp, "d MMM 'o' HH:mm").toUpperCase()
 }
 
 export const clamp = (value: number, min: number, max: number) =>

@@ -137,6 +137,7 @@ export const ChatHeader = ({
 
   return (
     <div
+      data-chat-header="true"
       className={cn(
         "chat-header relative z-10 flex items-center justify-between gap-4",
         headerPadding,

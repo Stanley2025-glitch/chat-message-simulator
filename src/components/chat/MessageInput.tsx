@@ -42,6 +42,7 @@ export const MessageInput = ({ placeholder = "Message", layout }: MessageInputPr
 
   return (
     <div
+      data-chat-input="true"
       className={cn(
         "relative z-10 flex items-center gap-2 border-t border-white/10 px-3 py-2",
         isWhatsApp && "gap-1.5 border-black/5 px-2.5 py-2",

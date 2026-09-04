@@ -54,9 +54,39 @@ const defaultExportSettings: ExportSettings = {
   captureMode: "viewport",
 }
 
+const FONT_READY_TIMEOUT_MS = 3000
+const RENDER_SETTLE_TIMEOUT_MS = 250
+
+const waitForFonts = async () => {
+  if (!document.fonts?.ready) return
+  // Firefox can leave a background extension tab waiting on a font promise
+  // longer than the renderer's transport timeout. System fallbacks are fine
+  // for this local screenshot, so font readiness must remain best-effort.
+  await Promise.race([
+    document.fonts.ready.catch(() => undefined),
+    new Promise<void>((resolve) => window.setTimeout(resolve, FONT_READY_TIMEOUT_MS)),
+  ])
+}
+
 const nextFrame = () =>
   new Promise<void>((resolve) => {
-    window.requestAnimationFrame(() => window.requestAnimationFrame(() => resolve()))
+    let settled = false
+    const finish = () => {
+      if (settled) return
+      settled = true
+      window.clearTimeout(timeoutId)
+      resolve()
+    }
+    const timeoutId = window.setTimeout(finish, RENDER_SETTLE_TIMEOUT_MS)
+
+    // requestAnimationFrame is useful while the tab is visible, but Firefox
+    // may pause it completely for an inactive tab. The timeout above keeps
+    // the render pipeline moving in both cases.
+    if (typeof window.requestAnimationFrame !== "function") {
+      finish()
+      return
+    }
+    window.requestAnimationFrame(() => window.requestAnimationFrame(finish))
   })
 
 const dataUrlToArrayBuffer = async (dataUrl: string) => {
@@ -91,6 +121,9 @@ const sendRuntimeMessage = async (message: unknown) => {
   window.parent.postMessage(message, "*")
 }
 
+const rendererRequestIdFromUrl = () =>
+  new URLSearchParams(window.location.search).get("request") || ""
+
 export const ExtensionRendererApp = () => {
   const [request, setRequest] = useState<RenderRequest | null>(null)
   const [error, setError] = useState("")
@@ -112,8 +145,15 @@ export const ExtensionRendererApp = () => {
   useEffect(() => {
     const listener = (message: RuntimeMessage) => {
       if (message.type !== "XCS_RENDER_CHAT" || !message.request) return
+      const rendererRequestId = rendererRequestIdFromUrl()
+      if (rendererRequestId && message.request.requestId !== rendererRequestId) return
       setError("")
       setRequest(message.request)
+      // tabs.sendMessage is used by the background page. Returning an ack is
+      // important: without it Firefox may reject the sender promise after
+      // delivering the message, causing the background to send a duplicate
+      // request through runtime.sendMessage.
+      return { ok: true }
     }
     const windowListener = (event: MessageEvent<RuntimeMessage>) => {
       if (event.data?.type === "XCS_RENDER_CHAT" && event.data.request) listener(event.data)
@@ -121,7 +161,10 @@ export const ExtensionRendererApp = () => {
     const runtime = getExtensionBrowser()?.runtime
     runtime?.onMessage?.addListener(listener)
     window.addEventListener("message", windowListener)
-    void sendRuntimeMessage({ type: "XCS_RENDERER_READY" })
+    void sendRuntimeMessage({
+      type: "XCS_RENDERER_READY",
+      requestId: rendererRequestIdFromUrl(),
+    })
     return () => {
       runtime?.onMessage?.removeListener?.(listener)
       window.removeEventListener("message", windowListener)
@@ -134,7 +177,7 @@ export const ExtensionRendererApp = () => {
 
     const render = async () => {
       try {
-        await document.fonts?.ready
+        await waitForFonts()
         await nextFrame()
         if (cancelled || !renderRef.current) return
 

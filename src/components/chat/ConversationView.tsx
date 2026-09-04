@@ -89,7 +89,10 @@ export const ConversationView = ({
         data-conversation-content="true"
       >
         {visibleMessages.length === 0 ? (
-          <div className="mx-auto max-w-sm rounded-2xl border border-dashed border-white/40 bg-white/10 px-6 py-8 text-center text-sm text-[var(--chat-muted)]">
+          <div
+            data-chat-message="true"
+            className="mx-auto max-w-sm rounded-2xl border border-dashed border-white/40 bg-white/10 px-6 py-8 text-center text-sm text-[var(--chat-muted)]"
+          >
             {messages.length === 0
               ? "Start your story by adding messages in the builder."
               : "No visible messages. Unhide messages in the builder."}
@@ -112,7 +115,7 @@ export const ConversationView = ({
 
           if (message.type === "system") {
             return (
-              <div key={message.id} className="space-y-3">
+              <div key={message.id} data-chat-message="true" className="space-y-3">
                 {showDate ? <div className={dateBadgeClass}>{currentDate}</div> : null}
                 <div className={systemMessageClass}>{message.content}</div>
               </div>
@@ -120,7 +123,11 @@ export const ConversationView = ({
           }
 
           return (
-            <div key={message.id} className={isWhatsApp ? "space-y-2" : "space-y-3"}>
+            <div
+              key={message.id}
+              data-chat-message="true"
+              className={isWhatsApp ? "space-y-2" : "space-y-3"}
+            >
               {showDate ? <div className={dateBadgeClass}>{currentDate}</div> : null}
               <MessageBubble
                 message={message}
