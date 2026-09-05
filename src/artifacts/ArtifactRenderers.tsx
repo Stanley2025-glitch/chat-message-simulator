@@ -36,6 +36,17 @@ const formatDate = (value: string) => {
   return formatDatePlain(unmaskedText(String(value || "")))
 }
 
+const formatReceiptDateTime = (value = new Date()) =>
+  new Intl.DateTimeFormat("pl-PL", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  })
+    .format(value)
+    .replace(", ", " · ")
+
 type ArtifactSizingProps = {
   autoHeight?: boolean
   minHeight?: number
@@ -169,7 +180,7 @@ export const ReceiptRenderer = ({ data, autoHeight, minHeight }: { data: Receipt
           <div className="mb-5 text-[18px] font-black uppercase tracking-[0.34em] text-stone-900">PARAGON</div>
           <div className="text-xl font-black tracking-wide"><PrivacyText value={data.merchant} /></div>
           {data.address ? <div className="mt-2 whitespace-pre-line text-xs leading-5 text-stone-500"><PrivacyText value={data.address} /></div> : null}
-          <div className="mt-4 border-y border-dashed border-stone-400 py-3 text-xs"><PrivacyText value={data.date || "04.09.2026 · 10:24"} /></div>
+          <div className="mt-4 border-y border-dashed border-stone-400 py-3 text-xs"><PrivacyText value={data.date || formatReceiptDateTime()} /></div>
         </div>
         <div className={autoHeight ? "py-6" : "flex-1 py-6"}>
           {data.items.map((item) => {

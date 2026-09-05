@@ -93,7 +93,9 @@ const chatPreviewData = (chat: GalleryDraft["chat"], fallbackPlatform: string): 
   const platform = String(chat?.platform || fallbackPlatform || "whatsapp").trim().toLowerCase()
   const contactName = String(chat?.contact?.name || "Kontakt").trim()
   const messages = Array.isArray(chat?.messages) ? chat.messages : []
-  const base = Date.now()
+  // Keep the fictional chronology live: every message stays on today's local
+  // date and the last one is slightly before the current minute.
+  const base = Date.now() - Math.max(1, messages.length) * 120000
   return {
     conversation: {
       id: `gallery-${platform}-${base.toString(36)}`,

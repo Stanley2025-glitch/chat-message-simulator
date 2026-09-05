@@ -28,9 +28,24 @@ import type {
   IPhoneNotificationArtifactData,
 } from "@/artifacts/types"
 import type { LayoutId, ThemeId } from "@/types/layout"
+import {
+  dateAtOffset,
+  localDateKey,
+  localDateLong,
+  localDateNumeric,
+  localDateShortLabel,
+  localDateTime,
+  localMonthYear,
+  localTime,
+  timeBeforeCurrentHour,
+} from "@/utils/dateContext"
+
+const demoNow = new Date()
+const demoTodayIso = localDateKey(demoNow)
+const demoTodayNumeric = localDateNumeric(demoNow)
 
 const calendarExample: CalendarArtifactData = {
-  date: "2026-09-04",
+  date: demoTodayIso,
   events: [
     { time: "08:00", title: "Dentysta", color: "#4f46e5" },
     { time: "09:15", title: "Due diligence gabinetu", color: "#0ea5e9" },
@@ -43,8 +58,8 @@ const invoiceExample: InvoiceArtifactData = {
   merchant: "Czarek Capital Sp. z o.o.",
   merchantAddress: "ul. Wspólna 14\n00-001 Warszawa\nNIP 521-000-00-01",
   invoiceNumber: "FV/09/2026/041",
-  issueDate: "2026-09-04",
-  dueDate: "2026-09-11",
+  issueDate: demoTodayIso,
+  dueDate: localDateKey(dateAtOffset(7, demoNow)),
   billTo: "<line color=\"navy\">Ventures & Assets sp. z o.o.</line>\nul. Marszałkowska 10\n00-590 Warszawa",
   items: [
     { name: "Audyt procesów sprzedażowych", quantity: 1, unitPrice: 8500 },
@@ -56,7 +71,7 @@ const invoiceExample: InvoiceArtifactData = {
 const receiptExample: ReceiptArtifactData = {
   merchant: "Czarek Capital Sp. z o.o.",
   address: "ul. Sienna 12 · Warszawa",
-  date: "04.09.2026 · 10:24",
+  date: localDateTime(demoNow),
   items: [
     { name: "Espresso", price: 19 },
     { name: "Parking", price: 80 },
@@ -93,11 +108,11 @@ const contractExample: ContractArtifactData = {
   documentType: "Letter of Intent",
   title: "List intencyjny dotyczący nabycia udziałów",
   parties: ["Czarek Capital Sp. z o.o.", "<line color=\"ink\">Business Park Holdings sp. z o.o.</line>"],
-  effectiveDate: "2026-09-04",
+  effectiveDate: demoTodayIso,
   terms: [
     { heading: "Przedmiot rozmów", body: "Strony rozpoczynają wyłączne rozmowy dotyczące nabycia 100% udziałów w <line color=\"ink\">Business Park Holdings sp. z o.o.</line>" },
     { heading: "Poufność", body: "Informacje przekazane w toku badania due diligence pozostają poufne przez 24 miesiące." },
-    { heading: "Harmonogram", body: "Strony zakładają podpisanie dokumentów transakcyjnych do 30 września 2026 r." },
+    { heading: "Harmonogram", body: `Strony zakładają podpisanie dokumentów transakcyjnych do ${localDateLong(dateAtOffset(25, demoNow))}.` },
   ],
   signatureLabel: "Podpis osoby uprawnionej",
 }
@@ -113,13 +128,13 @@ const courseSlideExample: CourseSlideArtifactData = {
 const notesExample: NotesArtifactData = {
   title: "Notatka po spotkaniu z właścicielem parkingu",
   body: "Parking ma stabilny cashflow, ale właściciel nadal sprzedaje wyłącznie abonamenty. Sprawdzić umowy najmu, liczbę miejsc i możliwość dołożenia ładowarek.",
-  date: "04 września 2026",
+  date: localDateLong(demoNow),
   tags: ["parking", "acquisition", "follow-up"],
 }
 
 const todoExample: TodoArtifactData = {
-  title: "Piątek · operacje",
-  date: "04.09.2026",
+  title: `${localDateShortLabel(demoNow).split(",")[0]} · operacje`,
+  date: demoTodayNumeric,
   tasks: [
     { text: "Dentysta", completed: true, priority: "normal", time: "08:00", tag: "DONE" },
     { text: "Due diligence gabinetu", completed: false, priority: "high", time: "09:15", tag: "HIGH" },
@@ -145,7 +160,7 @@ const spreadsheetExample: SpreadsheetArtifactData = {
 
 const dashboardExample: DashboardArtifactData = {
   title: "Portfolio Czarka",
-  period: "Wrzesień 2026",
+  period: localMonthYear(demoNow),
   metrics: [
     { label: "Aktywa", value: 4812, change: 4.8, trend: "up" },
     { label: "Miesięczny cashflow", value: "1,84 mln PLN", change: 12.4, trend: "up" },
@@ -163,8 +178,8 @@ const crmContactExample: CrmContactArtifactData = {
   email: "<line color=\"plum\">marta@businesspark.example</line>",
   tags: ["seller", "parking", "warm"],
   notes: "Prowadzi rozmowy sama. Jest otwarta na earn-out, ale nie na długi okres wyłączności.",
-  lastContact: "04.09 · przesłano list intencyjny",
-  nextAction: "Zadzwonić po decyzję prawnika w poniedziałek o 09:00.",
+  lastContact: `${demoTodayNumeric} · przesłano list intencyjny`,
+  nextAction: `Zadzwonić po decyzję prawnika ${localDateLong(dateAtOffset(2, demoNow))} o 09:00.`,
   metrics: [{ label: "Relacja", value: "Warm" }, { label: "Potencjał", value: "18,4 mln PLN" }],
 }
 
@@ -185,7 +200,7 @@ const memoExample: InvestmentMemoArtifactData = {
   pros: ["Powtarzalne wizyty", "Dostępne cross-sell", "Właściciel zostaje na 6 miesięcy"],
   risks: ["Najem terenu", "Jeden dostawca chemii", "Właściciel nie chce sprzedać"],
   recommendation: "Zwiększyć ofertę i rozpocząć wyłączność po potwierdzeniu najmu.",
-  date: "04.09.2026",
+  date: demoTodayNumeric,
   chart: { type: "bar", labels: ["2023", "2024", "2025", "2026E"], values: [410, 510, 610, 690] },
 }
 
@@ -203,7 +218,7 @@ const reviewExample: ReviewArtifactData = {
   business: "Czarek Capital Sp. z o.o.",
   reviewer: "Aleksandra <blur>M.</blur>",
   rating: 1,
-  date: "03.09.2026",
+  date: demoTodayNumeric,
   review: "Czekałam na realizację ponad tydzień, a po kontakcie nadal nie dostałam konkretnego terminu. Brak informacji i bardzo słaba obsługa.",
   ownerResponse: "Tu Czarek, właściciel. Przepraszam za brak informacji. Sprawdzę sprawę z zespołem i wrócę z konkretnym rozwiązaniem.",
   verified: true,
@@ -240,18 +255,18 @@ const tradeResultExample: TradeResultArtifactData = {
   entryPrice: 164.2,
   exitPrice: 194.82,
   duration: "2 dni 04 h",
-  closedAt: "04.09.2026 · 10:24",
+  closedAt: localDateTime(demoNow),
   fees: 12.4,
   riskReward: "1 : 2,4",
 }
 
 const iphoneNotificationExample: IPhoneNotificationArtifactData = {
-  date: "Piątek, 4 września",
-  time: "09:41",
+  date: localDateShortLabel(demoNow),
+  time: localTime(demoNow),
   notifications: [
-    { app: "Wiadomości", title: "Marta", body: "Podeślę jeszcze jedną wersję umowy przed południem.", time: "09:38", tone: "message" },
-    { app: "Kalendarz", title: "Przegląd lokalizacji", body: "Dzisiaj o 11:30 · Sala konferencyjna", time: "09:30", tone: "calendar" },
-    { app: "Poczta", title: "Nowa wiadomość", body: "Podsumowanie rozmowy jest już gotowe do sprawdzenia.", time: "09:12", tone: "mail" },
+    { app: "Wiadomości", title: "Marta", body: "Podeślę jeszcze jedną wersję umowy przed południem.", time: timeBeforeCurrentHour(0, demoNow), tone: "message" },
+    { app: "Kalendarz", title: "Przegląd lokalizacji", body: "Dzisiaj o 11:30 · Sala konferencyjna", time: timeBeforeCurrentHour(1, demoNow), tone: "calendar" },
+    { app: "Poczta", title: "Nowa wiadomość", body: "Podsumowanie rozmowy jest już gotowe do sprawdzenia.", time: timeBeforeCurrentHour(2, demoNow), tone: "mail" },
   ],
 }
 
@@ -299,12 +314,15 @@ const chatExampleConversation = (id: string, firstName: string, secondName: stri
     { id: "self", name: firstName, status: "online", color: "#4f46e5" },
     { id: "contact", name: secondName, status: "online", color: "#0ea5e9" },
   ],
-  messages: [
-    { id: `${id}-1`, senderId: "contact", content: "Masz chwilę na szybki call?", timestamp: "2026-09-04T09:12:00.000Z", type: "text", status: "read" },
-    { id: `${id}-2`, senderId: "self", content: "Jasne, jestem dostępny za 10 minut.", timestamp: "2026-09-04T09:13:00.000Z", type: "text", status: "read" },
-    { id: `${id}-3`, senderId: "contact", content: "Super, podeślę zaproszenie.", timestamp: "2026-09-04T09:14:00.000Z", type: "text", status: "delivered" },
-  ],
-  metadata: { createdAt: "2026-09-04T09:12:00.000Z", updatedAt: "2026-09-04T09:14:00.000Z" },
+  messages: (() => {
+    const base = demoNow.getTime() - 6 * 60_000
+    return [
+      { id: `${id}-1`, senderId: "contact", content: "Masz chwilę na szybki call?", timestamp: new Date(base).toISOString(), type: "text", status: "read" },
+      { id: `${id}-2`, senderId: "self", content: "Jasne, jestem dostępny za 10 minut.", timestamp: new Date(base + 2 * 60_000).toISOString(), type: "text", status: "read" },
+      { id: `${id}-3`, senderId: "contact", content: "Super, podeślę zaproszenie.", timestamp: new Date(base + 4 * 60_000).toISOString(), type: "text", status: "delivered" },
+    ]
+  })(),
+  metadata: { createdAt: new Date(demoNow.getTime() - 6 * 60_000).toISOString(), updatedAt: new Date(demoNow.getTime() - 2 * 60_000).toISOString() },
 })
 
 const chatExample = (layoutId: LayoutId, label: string, themeId: ThemeId = "light"): ChatExampleData => ({
