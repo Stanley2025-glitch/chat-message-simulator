@@ -25,6 +25,7 @@ import type {
   DashboardArtifactData,
   CrmContactArtifactData,
   DueDiligenceArtifactData,
+  IPhoneNotificationArtifactData,
 } from "@/artifacts/types"
 import type { LayoutId, ThemeId } from "@/types/layout"
 
@@ -244,6 +245,16 @@ const tradeResultExample: TradeResultArtifactData = {
   riskReward: "1 : 2,4",
 }
 
+const iphoneNotificationExample: IPhoneNotificationArtifactData = {
+  date: "Piątek, 4 września",
+  time: "09:41",
+  notifications: [
+    { app: "Wiadomości", title: "Marta", body: "Podeślę jeszcze jedną wersję umowy przed południem.", time: "09:38", tone: "message" },
+    { app: "Kalendarz", title: "Przegląd lokalizacji", body: "Dzisiaj o 11:30 · Sala konferencyjna", time: "09:30", tone: "calendar" },
+    { app: "Poczta", title: "Nowa wiadomość", body: "Podsumowanie rozmowy jest już gotowe do sprawdzenia.", time: "09:12", tone: "mail" },
+  ],
+}
+
 export const artifactRegistry: ArtifactDefinition[] = [
   { type: "calendar", label: "Calendar", category: "Personal", description: "Daily schedule · height fits its events.", width: 1080, height: 1080, exportMode: "adaptive", minHeight: 560, exampleData: calendarExample },
   { type: "invoice", label: "Invoice", category: "Finance", description: "VAT invoice · document height fits its rows.", width: 1080, height: 1080, exportMode: "adaptive", minHeight: 720, exampleData: invoiceExample },
@@ -251,7 +262,7 @@ export const artifactRegistry: ArtifactDefinition[] = [
   { type: "chart", label: "Chart", category: "Finance", description: "Bar chart · square X/Twitter export.", width: 1080, height: 1080, exampleData: chartExample },
   { type: "poll", label: "Poll", category: "Content", description: "Voting card · square X/Twitter export.", width: 1080, height: 1080, exampleData: pollExample },
   { type: "contract", label: "Contract / LOI", category: "Deals", description: "Letter of intent · document height fits its clauses.", width: 1080, height: 1080, exportMode: "adaptive", minHeight: 760, exampleData: contractExample },
-  { type: "course-slide", label: "Course Slide", category: "Content", description: "Education slide · square X/Twitter export.", width: 1080, height: 1080, exampleData: courseSlideExample },
+  { type: "course-slide", label: "Course Slide", category: "Content", description: "Education slide · square X/Twitter export.", width: 1080, height: 1080, variants: visualVariants["course-slide"], defaultVariant: "midnight", exampleData: courseSlideExample },
   { type: "notes", label: "Notes", category: "Personal", description: "Executive note · content-fit export.", width: 1080, height: 1080, exportMode: "content", minHeight: 640, variants: visualVariants.notes, defaultVariant: "paper", exampleData: notesExample },
   { type: "todo", label: "Todo / Task List", category: "Personal", description: "Prioritized worklist · content-fit export.", width: 1080, height: 1080, exportMode: "content", minHeight: 620, variants: visualVariants.todo, defaultVariant: "clean", exampleData: todoExample },
   { type: "spreadsheet", label: "P&L / Spreadsheet", category: "Finance", description: "Business report · height fits its rows.", width: 1080, height: 1080, exportMode: "adaptive", minHeight: 680, variants: visualVariants.spreadsheet, defaultVariant: "accountant", exampleData: spreadsheetExample },
@@ -264,6 +275,7 @@ export const artifactRegistry: ArtifactDefinition[] = [
   { type: "activity-feed", label: "Transaction Feed", category: "Finance", description: "Financial ledger · content-fit export.", width: 1080, height: 1080, exportMode: "content", minHeight: 620, variants: visualVariants["activity-feed"], defaultVariant: "finance-light", exampleData: activityFeedExample },
   { type: "property-listing", label: "Property Listing", category: "Operations", description: "Property deal card · content-fit export.", width: 1080, height: 1080, exportMode: "content", minHeight: 820, variants: visualVariants["property-listing"], defaultVariant: "marketplace", exampleData: propertyExample },
   { type: "trade-result", label: "Trade Result", category: "Finance", description: "Closed position result · no instrument name.", width: 1080, height: 1080, exportMode: "adaptive", minHeight: 760, variants: visualVariants["trade-result"], defaultVariant: "xtb-dark", exampleData: tradeResultExample },
+  { type: "iphone-notification", label: "iPhone Notification Screen", category: "Communication", description: "Fictional iPhone lock screen with stacked notifications.", width: 393, height: 852, variants: visualVariants["iphone-notification"], defaultVariant: "ios-midnight", exampleData: iphoneNotificationExample },
 ]
 
 export const getArtifactDefinition = (type: ArtifactType) =>
@@ -316,24 +328,6 @@ export interface RendererGalleryEntry {
   render: (data: ArtifactData | ChatExampleData, variant?: string) => React.ReactNode
 }
 
-const chatEntries: RendererGalleryEntry[] = [
-  ["whatsapp", "WhatsApp", "light"],
-  ["messenger", "Messenger", "light"],
-  ["imessage", "iMessage / SMS", "light"],
-  ["snapchat", "Snapchat", "dark"],
-  ["instagram", "Instagram", "dark"],
-  ["tinder", "Tinder", "light"],
-].map(([layoutId, label, themeId]) => ({
-  id: `chat-${layoutId}`,
-  label,
-  category: "Communicator",
-  description: "Existing chat layout rendered with deterministic conversation data.",
-  width: 393,
-  height: 852,
-  exampleData: chatExample(layoutId as LayoutId, label, themeId as ThemeId),
-  render: (data) => <ChatExampleRenderer data={data as ChatExampleData} />,
-}))
-
 const chatTemplateVariants = [
   ["whatsapp", "WhatsApp"], ["messenger", "Messenger"], ["imessage", "iMessage"], ["sms", "SMS"],
   ["telegram", "Telegram"], ["instagram", "Instagram"], ["snapchat", "Snapchat"], ["tinder", "Tinder"],
@@ -372,4 +366,4 @@ const artifactEntries: RendererGalleryEntry[] = artifactRegistry.map((definition
   render: (data, variant) => <ArtifactCanvas type={definition.type} data={data as ArtifactData} variant={variant || definition.defaultVariant} autoHeight={artifactUsesContentHeight(definition.type)} minHeight={definition.minHeight} />,
 }))
 
-export const rendererGalleryRegistry = [...chatEntries, chatTemplateEntry, ...artifactEntries]
+export const rendererGalleryRegistry = [chatTemplateEntry, ...artifactEntries]

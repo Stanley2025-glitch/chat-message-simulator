@@ -18,6 +18,7 @@ export type ArtifactType =
   | "activity-feed"
   | "property-listing"
   | "trade-result"
+  | "iphone-notification"
 
 export type ArtifactCategory =
   | "Personal"
@@ -41,6 +42,7 @@ export interface ArtifactVariantTokens {
   text: string
   textMuted: string
   accent: string
+  accentText: string
   positive: string
   negative: string
   warning: string
@@ -259,6 +261,20 @@ export interface TradeResultArtifactData {
   riskReward?: string
 }
 
+export type IPhoneNotificationTone = "message" | "mail" | "calendar" | "system"
+
+export interface IPhoneNotificationArtifactData {
+  date: string
+  time: string
+  notifications: Array<{
+    app: string
+    title: string
+    body: string
+    time: string
+    tone: IPhoneNotificationTone
+  }>
+}
+
 export type ArtifactData =
   | CalendarArtifactData
   | InvoiceArtifactData
@@ -279,6 +295,7 @@ export type ArtifactData =
   | ActivityFeedArtifactData
   | PropertyListingArtifactData
   | TradeResultArtifactData
+  | IPhoneNotificationArtifactData
 
 export interface ArtifactDefinition<T extends ArtifactData = ArtifactData> {
   type: ArtifactType

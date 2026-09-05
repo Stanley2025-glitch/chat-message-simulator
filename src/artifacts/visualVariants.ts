@@ -7,6 +7,7 @@ const base: ArtifactVariantTokens = {
   text: "#172033",
   textMuted: "#697386",
   accent: "#2762a8",
+  accentText: "#ffffff",
   positive: "#218a5b",
   negative: "#c94f4f",
   warning: "#b97817",
@@ -27,6 +28,14 @@ const visual = (id: string, label: string, description: string, tokens: Partial<
 })
 
 export const visualVariants: Partial<Record<ArtifactType, ArtifactVariant[]>> = {
+  "course-slide": [
+    visual("midnight", "Midnight", "Mocny granat z bursztynowym akcentem.", { background: "#111827", surface: "#172033", text: "#f8fafc", textMuted: "#cbd5e1", accent: "#facc15", accentText: "#111827", positive: "#34d399", negative: "#d946ef", border: "#ffffff26", borderRadius: "0px", fontHeading: "'Space Grotesk', Arial, sans-serif", fontBody: "'IBM Plex Sans', Arial, sans-serif", shadow: "none" }),
+    visual("cobalt", "Cobalt", "Chłodny niebieski z jasnym cyjanem.", { background: "#0b1730", surface: "#122445", text: "#f4f8ff", textMuted: "#b9c9e2", accent: "#7dd3fc", accentText: "#082f49", positive: "#60a5fa", negative: "#a78bfa", border: "#93c5fd3d", borderRadius: "10px", fontHeading: "'Space Grotesk', Arial, sans-serif", fontBody: "'IBM Plex Sans', Arial, sans-serif", shadow: "subtle" }),
+    visual("paper", "Paper", "Jasny, editorialny slajd z granatowym akcentem.", { background: "#f4efe6", surface: "#fffdf7", text: "#182334", textMuted: "#536274", accent: "#173b67", accentText: "#ffffff", positive: "#2f855a", negative: "#a3413b", border: "#cbd5e1", borderRadius: "0px", fontHeading: "Georgia, 'Times New Roman', serif", fontBody: "'IBM Plex Sans', Arial, sans-serif", shadow: "none" }),
+    visual("editorial", "Editorial", "Jasny minimalizm z terakotowym markerem.", { background: "#f2f4f7", surface: "#ffffff", text: "#18202b", textMuted: "#566273", accent: "#c2410c", accentText: "#ffffff", positive: "#2f855a", negative: "#b83280", border: "#d7dee7", borderRadius: "8px", fontHeading: "'Space Grotesk', Arial, sans-serif", fontBody: "'IBM Plex Sans', Arial, sans-serif", shadow: "subtle" }),
+    visual("forest", "Forest", "Głęboka zieleń z limonkowym światłem.", { background: "#0f211d", surface: "#162d27", text: "#f3faf5", textMuted: "#b7d0c5", accent: "#b8e36a", accentText: "#142112", positive: "#6ee7b7", negative: "#f0abfc", border: "#9fd6ba40", borderRadius: "10px", fontHeading: "'Space Grotesk', Arial, sans-serif", fontBody: "'IBM Plex Sans', Arial, sans-serif", shadow: "none" }),
+    visual("plum", "Plum", "Śliwkowy wieczór z różowym akcentem.", { background: "#20142b", surface: "#2c1d3b", text: "#fff7ff", textMuted: "#ddc9e8", accent: "#f3b1e1", accentText: "#341234", positive: "#86efac", negative: "#fb7185", border: "#e5c4e840", borderRadius: "14px", fontHeading: "'Space Grotesk', Arial, sans-serif", fontBody: "'IBM Plex Sans', Arial, sans-serif", shadow: "subtle" }),
+  ],
   notes: [
     visual("paper", "Paper", "Warm editorial note.", { background: "#f3efe5", surface: "#fbf8f1", text: "#202020", textMuted: "#79756c", accent: "#b48a4a", border: "#ded7c9", borderRadius: "4px", fontHeading: "Georgia, serif", shadow: "none" }),
     visual("minimal", "Minimal", "Quiet white writing space.", { background: "#ffffff", surface: "#ffffff", surfaceSecondary: "#fafafa", text: "#111111", textMuted: "#8b8b8b", accent: "#111111", border: "#e5e5e5", borderRadius: "0px", shadow: "none" }),
@@ -92,6 +101,11 @@ export const visualVariants: Partial<Record<ArtifactType, ArtifactVariant[]>> = 
   "trade-result": [
     visual("xtb-dark", "Dark Trading", "Anonymous closed-position result.", { background: "#0b1013", surface: "#151c20", surfaceSecondary: "#1d272c", text: "#f4f8f8", textMuted: "#91a3a7", accent: "#17b7a3", positive: "#2bd68f", negative: "#f2636e", border: "#2b383d", borderRadius: "8px", fontHeading: "'Space Grotesk', Arial, sans-serif", fontBody: "'IBM Plex Sans', Arial, sans-serif", fontMono: "'IBM Plex Mono', 'Courier New', monospace", density: "compact", shadow: "none" }),
     visual("xtb-light", "Light Trading", "Clean anonymous trading-result card.", { background: "#eef3f3", surface: "#ffffff", surfaceSecondary: "#e3ecec", text: "#152326", textMuted: "#6f8184", accent: "#078f81", positive: "#087f61", negative: "#d84b58", border: "#cbd8d8", borderRadius: "8px", fontHeading: "'Space Grotesk', Arial, sans-serif", fontBody: "'IBM Plex Sans', Arial, sans-serif", fontMono: "'IBM Plex Mono', 'Courier New', monospace", density: "compact", shadow: "subtle" }),
+  ],
+  "iphone-notification": [
+    visual("ios-midnight", "iOS Midnight", "Ciemny, szklany ekran blokady iPhone'a.", { background: "#111d31", surface: "#26354b", surfaceSecondary: "#334862", text: "#f7fbff", textMuted: "#d1dae8", accent: "#78bdff", accentText: "#10233a", positive: "#6ee7b7", negative: "#ff8793", warning: "#ffd27a", border: "#ffffff2e", borderRadius: "30px", fontHeading: "'Space Grotesk', Arial, sans-serif", fontBody: "'IBM Plex Sans', Arial, sans-serif", shadow: "elevated" }),
+    visual("ios-sunrise", "iOS Sunrise", "Jasny ekran blokady z ciepłym światłem.", { background: "#e6d1c6", surface: "#fffaf7", surfaceSecondary: "#f5e2d8", text: "#172033", textMuted: "#667085", accent: "#ef765f", accentText: "#ffffff", positive: "#1f9965", negative: "#cf4f67", warning: "#b7791f", border: "#ffffff99", borderRadius: "30px", fontHeading: "'Space Grotesk', Arial, sans-serif", fontBody: "'IBM Plex Sans', Arial, sans-serif", shadow: "elevated" }),
+    visual("ios-graphite", "iOS Graphite", "Neutralny, minimalistyczny ekran powiadomień.", { background: "#282c36", surface: "#3b414e", surfaceSecondary: "#4a5261", text: "#fbfcff", textMuted: "#d4d8e0", accent: "#d7e0ff", accentText: "#283046", positive: "#75e0ac", negative: "#ff8e99", warning: "#ffcf70", border: "#ffffff2e", borderRadius: "30px", fontHeading: "'Space Grotesk', Arial, sans-serif", fontBody: "'IBM Plex Sans', Arial, sans-serif", shadow: "elevated" }),
   ],
 }
 

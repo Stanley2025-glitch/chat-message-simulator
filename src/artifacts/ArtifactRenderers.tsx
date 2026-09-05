@@ -3,7 +3,10 @@ import type {
   ChartArtifactData,
   ContractArtifactData,
   CourseSlideArtifactData,
+  ArtifactVariant,
   InvoiceArtifactData,
+  IPhoneNotificationArtifactData,
+  IPhoneNotificationTone,
   PollArtifactData,
   ReceiptArtifactData,
 } from "@/artifacts/types"
@@ -43,14 +46,16 @@ const ArtifactFrame = ({
   className = "",
   autoHeight = false,
   minHeight,
+  style,
 }: {
   children: React.ReactNode
   className?: string
+  style?: React.CSSProperties
 } & ArtifactSizingProps) => (
   <div
     data-xcs-artifact-content={autoHeight ? "true" : undefined}
     className={`${autoHeight ? "" : "h-full"} w-full overflow-hidden bg-white text-slate-900 ${className}`}
-    style={autoHeight && minHeight ? { minHeight } : undefined}
+    style={{ ...style, ...(autoHeight && minHeight ? { minHeight } : {}) }}
   >
     {children}
   </div>
@@ -272,19 +277,100 @@ export const ContractRenderer = ({ data, autoHeight, minHeight }: { data: Contra
   </ArtifactFrame>
 )
 
-export const CourseSlideRenderer = ({ data, autoHeight, minHeight }: { data: CourseSlideArtifactData } & ArtifactSizingProps) => (
-  <ArtifactFrame className="relative bg-[#111827] p-16 font-sans text-white" autoHeight={autoHeight} minHeight={minHeight}>
-    <div className="absolute inset-0 bg-[#111827]" />
-    <div className="absolute -right-24 -top-20 h-96 w-96 rounded-full bg-amber-400/20 blur-3xl" />
-    <div className="absolute -bottom-28 -left-24 h-80 w-80 rounded-full bg-fuchsia-500/20 blur-3xl" />
-    <div className="relative z-10 flex h-full flex-col border border-white/15 p-14">
-      <div className="flex items-center justify-between text-[18px] font-bold uppercase tracking-[0.24em] text-amber-300"><span>Moduł {data.module}</span><span>Program mentoringowy</span></div>
-      <div className="my-auto max-w-4xl">
-        <div className="mb-6 text-[28px] font-semibold tracking-wide text-slate-300"><PrivacyText value={data.title} /></div>
-        <h1 className="whitespace-pre-line text-[76px] font-black leading-[0.95] tracking-tight"><PrivacyText value={data.headline} /></h1>
-        <p className="mt-8 max-w-2xl text-[28px] leading-relaxed text-slate-300"><PrivacyText value={data.body} /></p>
+export const CourseSlideRenderer = ({ data, variant, autoHeight, minHeight }: { data: CourseSlideArtifactData; variant: ArtifactVariant } & ArtifactSizingProps) => {
+  const tokens = variant.tokens
+  return (
+    <ArtifactFrame className="relative p-16" style={{ background: tokens.background, color: tokens.text, fontFamily: tokens.fontBody }} autoHeight={autoHeight} minHeight={minHeight}>
+      <div className="absolute inset-0" style={{ background: tokens.background }} />
+      <div className="absolute -right-24 -top-20 h-96 w-96 rounded-full opacity-20 blur-3xl" style={{ backgroundColor: tokens.accent }} />
+      <div className="absolute -bottom-28 -left-24 h-80 w-80 rounded-full opacity-20 blur-3xl" style={{ backgroundColor: tokens.negative }} />
+      <div className="relative z-10 flex h-full flex-col border p-14" style={{ borderColor: tokens.border, borderRadius: tokens.borderRadius }}>
+        <div className="flex items-center justify-between text-[18px] font-bold uppercase tracking-[0.24em]" style={{ color: tokens.accent }}><span>Moduł {data.module}</span><span>Program mentoringowy</span></div>
+        <div className="my-auto max-w-4xl">
+          <div className="mb-6 text-[28px] font-semibold tracking-wide" style={{ color: tokens.textMuted }}><PrivacyText value={data.title} /></div>
+          <h1 className="whitespace-pre-line text-[76px] font-black leading-[0.95] tracking-tight" style={{ color: tokens.text, fontFamily: tokens.fontHeading }}><PrivacyText value={data.headline} /></h1>
+          <p className="mt-8 max-w-2xl text-[28px] leading-relaxed" style={{ color: tokens.textMuted }}><PrivacyText value={data.body} /></p>
+        </div>
+        <div className="border-t pt-6" style={{ borderColor: tokens.border }}><span className="inline-flex rounded-full px-5 py-3 text-[24px] font-black" style={{ backgroundColor: tokens.accent, color: tokens.accentText }}><PrivacyText value={data.footer} /></span></div>
       </div>
-      <div className="border-t border-white/15 pt-6"><span className="inline-flex rounded-full bg-amber-300 px-5 py-3 text-[24px] font-black text-slate-950"><PrivacyText value={data.footer} /></span></div>
-    </div>
-  </ArtifactFrame>
-)
+    </ArtifactFrame>
+  )
+}
+
+const iphoneNotificationToneStyles: Record<IPhoneNotificationTone, { icon: string; background: string }> = {
+  message: { icon: "•••", background: "#1687f8" },
+  mail: { icon: "✉", background: "#4b8df8" },
+  calendar: { icon: "25", background: "#f0445d" },
+  system: { icon: "!", background: "#f59e0b" },
+}
+
+export const IPhoneNotificationRenderer = ({ data, variant, autoHeight, minHeight }: { data: IPhoneNotificationArtifactData; variant: ArtifactVariant } & ArtifactSizingProps) => {
+  const tokens = variant.tokens
+  const notifications = data.notifications.slice(0, 4)
+  const cardShadow = variant.tokens.shadow === "none" ? "none" : "0 18px 36px rgba(9, 18, 36, 0.18)"
+  return (
+    <ArtifactFrame
+      className="relative p-4 font-sans"
+      style={{
+        background: `radial-gradient(circle at 82% 8%, ${tokens.accent}66 0%, transparent 34%), linear-gradient(145deg, ${tokens.background} 0%, ${tokens.surfaceSecondary} 100%)`,
+        color: tokens.text,
+        fontFamily: tokens.fontBody,
+      }}
+      autoHeight={autoHeight}
+      minHeight={minHeight}
+    >
+      <div className="relative z-10 flex h-full flex-col">
+        <div className="flex items-center justify-between px-2 text-[13px] font-semibold" style={{ color: tokens.text }}>
+          <span>9:41</span>
+          <div className="flex items-center gap-1.5 text-[11px]">
+            <span className="tracking-[-0.24em]">▮▮▮</span>
+            <span className="text-[14px]">⌁</span>
+            <span className="rounded-[4px] border px-1 py-0.5" style={{ borderColor: tokens.border }}>100 ▮</span>
+          </div>
+        </div>
+
+        <div className="mx-auto mt-3 h-5 w-32 rounded-full" style={{ backgroundColor: "rgba(0, 0, 0, 0.72)" }} />
+
+        <div className="mt-9 text-center">
+          <div className="text-[17px] font-medium tracking-wide" style={{ color: tokens.textMuted }}><PrivacyText value={data.date} /></div>
+          <div className="mt-1 text-[78px] font-light leading-none tracking-[-0.07em]" style={{ color: tokens.text, fontFamily: tokens.fontHeading }}><PrivacyText value={data.time} /></div>
+        </div>
+
+        <section className="mt-9 flex-1 space-y-3" aria-label="Powiadomienia">
+          <div className="flex items-center justify-between px-1 text-[11px] font-bold uppercase tracking-[0.16em]" style={{ color: tokens.textMuted }}>
+            <span>Powiadomienia</span>
+            <span>{notifications.length}</span>
+          </div>
+          {notifications.map((notification) => {
+            const tone = iphoneNotificationToneStyles[notification.tone] || iphoneNotificationToneStyles.system
+            return (
+              <article
+                key={`${notification.app}-${notification.time}-${notification.title}`}
+                className="flex gap-3 rounded-[22px] border p-3.5"
+                style={{ backgroundColor: tokens.surface, borderColor: tokens.border, boxShadow: cardShadow }}
+              >
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] text-[13px] font-bold text-white" style={{ backgroundColor: tone.background }}>
+                  {tone.icon}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <div className="min-w-0 flex-1 truncate text-[13px] font-semibold"><PrivacyText value={notification.app} /></div>
+                    <time className="shrink-0 text-[12px]" style={{ color: tokens.textMuted }}>{notification.time}</time>
+                  </div>
+                  <div className="mt-1 truncate text-[16px] font-semibold leading-5"><PrivacyText value={notification.title} /></div>
+                  <p className="mt-0.5 line-clamp-2 text-[13px] leading-5" style={{ color: tokens.textMuted }}><PrivacyText value={notification.body} /></p>
+                </div>
+              </article>
+            )
+          })}
+        </section>
+
+        <div className="mt-auto flex items-end justify-between px-2 pb-1 pt-6">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full text-[17px]" style={{ backgroundColor: "rgba(0, 0, 0, 0.32)", color: "#ffffff" }}>✦</div>
+          <div className="pb-1 text-[11px] font-medium" style={{ color: tokens.textMuted }}>Przesuń w górę, aby otworzyć</div>
+          <div className="flex h-10 w-10 items-center justify-center rounded-full text-[16px]" style={{ backgroundColor: "rgba(0, 0, 0, 0.32)", color: "#ffffff" }}>◉</div>
+        </div>
+      </div>
+    </ArtifactFrame>
+  )
+}

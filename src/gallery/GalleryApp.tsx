@@ -123,7 +123,7 @@ const chatPreviewData = (chat: GalleryDraft["chat"], fallbackPlatform: string): 
 const jsonPreview = (value: unknown) => {
   try {
     return JSON.stringify(value, null, 2)
-  } catch (_) {
+  } catch {
     return "Nie udało się pokazać danych JSON."
   }
 }

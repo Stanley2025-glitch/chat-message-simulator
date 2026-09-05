@@ -3,6 +3,7 @@ import {
   ChartRenderer,
   ContractRenderer,
   CourseSlideRenderer,
+  IPhoneNotificationRenderer,
   InvoiceRenderer,
   PollRenderer,
   ReceiptRenderer,
@@ -46,6 +47,7 @@ import type {
   DashboardArtifactData,
   CrmContactArtifactData,
   DueDiligenceArtifactData,
+  IPhoneNotificationArtifactData,
 } from "@/artifacts/types"
 
 export const ArtifactCanvas = ({ type, data, variant: variantId, maskSeed, autoHeight = false, minHeight }: { type: ArtifactType; data: ArtifactData; variant?: string; maskSeed?: string; autoHeight?: boolean; minHeight?: number }) => {
@@ -65,7 +67,9 @@ export const ArtifactCanvas = ({ type, data, variant: variantId, maskSeed, autoH
     case "contract":
       return <ContractRenderer data={data as ContractArtifactData} autoHeight={autoHeight} minHeight={minHeight} />
     case "course-slide":
-      return <CourseSlideRenderer data={data as CourseSlideArtifactData} autoHeight={autoHeight} minHeight={minHeight} />
+      return <CourseSlideRenderer data={data as CourseSlideArtifactData} variant={variant} autoHeight={autoHeight} minHeight={minHeight} />
+    case "iphone-notification":
+      return <IPhoneNotificationRenderer data={data as IPhoneNotificationArtifactData} variant={variant} autoHeight={autoHeight} minHeight={minHeight} />
     case "notes":
       return <NotesRenderer data={data as NotesArtifactData} variant={variant} autoHeight={autoHeight} minHeight={minHeight} />
     case "todo":

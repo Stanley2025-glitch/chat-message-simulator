@@ -28,7 +28,7 @@ import type {
   TodoArtifactData,
 } from "@/artifacts/types";
 import { PrivacyText } from "@/artifacts/PrivacyMask";
-import propertyListingPreview from "@/assets/property-listing-preview.png";
+import propertyListingPreview from "@/assets/property-listing-preview.webp";
 
 type TemplateProps<T> = {
   data: T;
