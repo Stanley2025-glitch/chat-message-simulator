@@ -16,42 +16,67 @@ const formatMoney = (value: number) =>
     maximumFractionDigits: 2,
   }).format(value)
 
-const formatDate = (value: string) => {
+const maskMarkup = /<(blur|line)([^>]*)>([\s\S]*?)<\/\1>/gi
+
+const unmaskedText = (value: string) => value.replace(maskMarkup, "$3")
+
+const formatDatePlain = (value: string) => {
   const date = new Date(`${value}T12:00:00`)
   return Number.isNaN(date.getTime())
     ? value
     : new Intl.DateTimeFormat("pl-PL", { day: "numeric", month: "long", year: "numeric" }).format(date)
 }
 
+const formatDate = (value: string) => {
+  // Daty są zawsze jawne. Zdejmujemy również ewentualne stare znaczniki,
+  // żeby renderer nigdy nie wyświetlił literalnego tekstu `<line>...</line>`.
+  return formatDatePlain(unmaskedText(String(value || "")))
+}
+
+type ArtifactSizingProps = {
+  autoHeight?: boolean
+  minHeight?: number
+}
+
 const ArtifactFrame = ({
   children,
   className = "",
+  autoHeight = false,
+  minHeight,
 }: {
   children: React.ReactNode
   className?: string
-}) => (
-  <div className={`h-full w-full overflow-hidden bg-white text-slate-900 ${className}`}>{children}</div>
+} & ArtifactSizingProps) => (
+  <div
+    data-xcs-artifact-content={autoHeight ? "true" : undefined}
+    className={`${autoHeight ? "" : "h-full"} w-full overflow-hidden bg-white text-slate-900 ${className}`}
+    style={autoHeight && minHeight ? { minHeight } : undefined}
+  >
+    {children}
+  </div>
 )
 
-export const CalendarRenderer = ({ data }: { data: CalendarArtifactData }) => {
-  const dayName = new Intl.DateTimeFormat("pl-PL", { weekday: "long" }).format(
-    new Date(`${data.date}T12:00:00`),
-  )
+export const CalendarRenderer = ({ data, autoHeight, minHeight }: { data: CalendarArtifactData } & ArtifactSizingProps) => {
+  const rawDate = unmaskedText(String(data.date || ""))
+  const parsedDate = new Date(`${rawDate}T12:00:00`)
+  const dayName = Number.isNaN(parsedDate.getTime())
+    ? ""
+    : new Intl.DateTimeFormat("pl-PL", { weekday: "long" }).format(parsedDate)
   return (
-    <ArtifactFrame className="bg-slate-50 p-16 font-sans">
-      <div className="flex h-full flex-col rounded-[28px] border border-slate-200 bg-white p-8 shadow-sm">
+    <ArtifactFrame className="bg-slate-50 p-16 font-sans" autoHeight={autoHeight} minHeight={minHeight}>
+      <div className={`flex ${autoHeight ? "" : "h-full"} flex-col rounded-[28px] border border-slate-200 bg-white p-8 shadow-sm`}>
         <div className="mb-7 flex items-start justify-between border-b border-slate-100 pb-6">
           <div>
             <div className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-600">Kalendarz</div>
-            <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950">{formatDate(data.date)}</h1>
-            <p className="mt-1 capitalize text-sm text-slate-500">{dayName}</p>
+            <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950"><PrivacyText value={formatDate(data.date)} /></h1>
+            {dayName ? <p className="mt-1 capitalize text-sm text-slate-500">{dayName}</p> : null}
           </div>
           <div className="rounded-2xl bg-indigo-600 px-4 py-3 text-center text-white">
             <div className="text-xs uppercase tracking-wide text-indigo-100">Wydarzenia</div>
             <div className="text-2xl font-bold">{data.events.length}</div>
           </div>
         </div>
-        <div className="flex-1 space-y-2">
+        <div className={autoHeight ? "space-y-2" : "flex-1 space-y-2"}>
           {data.events.map((event, index) => (
             <div key={`${event.time}-${event.title}`} className="grid grid-cols-[74px_1fr] gap-4">
               <time className="pt-3 text-right text-sm font-semibold tabular-nums text-slate-400">{event.time}</time>
@@ -70,12 +95,12 @@ export const CalendarRenderer = ({ data }: { data: CalendarArtifactData }) => {
   )
 }
 
-export const InvoiceRenderer = ({ data }: { data: InvoiceArtifactData }) => {
+export const InvoiceRenderer = ({ data, autoHeight, minHeight }: { data: InvoiceArtifactData } & ArtifactSizingProps) => {
   const subtotal = data.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0)
   const tax = subtotal * 0.23
   return (
-    <ArtifactFrame className="p-16 font-sans">
-      <div className="flex h-full flex-col">
+    <ArtifactFrame className="p-16 font-sans" autoHeight={autoHeight} minHeight={minHeight}>
+      <div className={`flex ${autoHeight ? "" : "h-full"} flex-col`}>
         <header className="flex items-start justify-between border-b-2 border-slate-900 pb-8">
           <div>
             <div className="text-3xl font-black tracking-tight"><PrivacyText value={data.merchant} /></div>
@@ -83,8 +108,8 @@ export const InvoiceRenderer = ({ data }: { data: InvoiceArtifactData }) => {
           </div>
           <div className="text-right">
             <div className="text-4xl font-black tracking-tight text-indigo-600">FAKTURA</div>
-            <div className="mt-3 text-sm font-semibold">{data.invoiceNumber}</div>
-            <div className="mt-1 text-xs text-slate-500">Wystawiono: {formatDate(data.issueDate)}</div>
+            <div className="mt-3 text-sm font-semibold"><PrivacyText value={data.invoiceNumber} /></div>
+            <div className="mt-1 text-xs text-slate-500">Wystawiono: <PrivacyText value={formatDate(data.issueDate)} /></div>
           </div>
         </header>
         <section className="grid grid-cols-2 gap-8 py-8 text-sm">
@@ -94,7 +119,7 @@ export const InvoiceRenderer = ({ data }: { data: InvoiceArtifactData }) => {
           </div>
           <div className="text-right">
             <div className="text-xs font-bold uppercase tracking-wider text-slate-400">Termin płatności</div>
-            <p className="mt-2 font-semibold text-slate-800">{formatDate(data.dueDate)}</p>
+            <p className="mt-2 font-semibold text-slate-800"><PrivacyText value={formatDate(data.dueDate)} /></p>
           </div>
         </section>
         <table className="w-full border-collapse text-sm">
@@ -117,7 +142,7 @@ export const InvoiceRenderer = ({ data }: { data: InvoiceArtifactData }) => {
             ))}
           </tbody>
         </table>
-        <div className="mt-auto flex items-end justify-between border-t border-slate-200 pt-6">
+        <div className={`${autoHeight ? "mt-8" : "mt-auto"} flex items-end justify-between border-t border-slate-200 pt-6`}>
           <p className="max-w-sm text-xs leading-5 text-slate-500"><PrivacyText value={data.notes || "Dziękujemy za terminową płatność."} /></p>
           <div className="w-64 space-y-2 text-sm">
             <div className="flex justify-between text-slate-500"><span>Netto</span><span>{formatMoney(subtotal)}</span></div>
@@ -130,18 +155,18 @@ export const InvoiceRenderer = ({ data }: { data: InvoiceArtifactData }) => {
   )
 }
 
-export const ReceiptRenderer = ({ data }: { data: ReceiptArtifactData }) => {
+export const ReceiptRenderer = ({ data, autoHeight, minHeight }: { data: ReceiptArtifactData } & ArtifactSizingProps) => {
   const total = data.items.reduce((sum, item) => sum + item.price * (item.quantity ?? 1), 0)
   return (
-    <ArtifactFrame className="bg-stone-200 p-16 font-mono">
-      <div className="mx-auto flex h-full max-w-[460px] flex-col bg-[#fffef8] px-9 py-8 text-[15px] shadow-xl">
+    <ArtifactFrame className="bg-stone-200 p-16 font-mono" autoHeight={autoHeight} minHeight={minHeight}>
+      <div className={`mx-auto flex ${autoHeight ? "" : "h-full"} max-w-[460px] flex-col bg-[#fffef8] px-9 py-8 text-[15px] shadow-xl`}>
         <div className="text-center">
           <div className="mb-5 text-[18px] font-black uppercase tracking-[0.34em] text-stone-900">PARAGON</div>
           <div className="text-xl font-black tracking-wide"><PrivacyText value={data.merchant} /></div>
           {data.address ? <div className="mt-2 whitespace-pre-line text-xs leading-5 text-stone-500"><PrivacyText value={data.address} /></div> : null}
-          <div className="mt-4 border-y border-dashed border-stone-400 py-3 text-xs">{data.date || "04.09.2026 · 10:24"}</div>
+          <div className="mt-4 border-y border-dashed border-stone-400 py-3 text-xs"><PrivacyText value={data.date || "04.09.2026 · 10:24"} /></div>
         </div>
-        <div className="flex-1 py-6">
+        <div className={autoHeight ? "py-6" : "flex-1 py-6"}>
           {data.items.map((item) => {
             const quantity = item.quantity ?? 1
             return (
@@ -162,11 +187,11 @@ export const ReceiptRenderer = ({ data }: { data: ReceiptArtifactData }) => {
   )
 }
 
-export const ChartRenderer = ({ data }: { data: ChartArtifactData }) => {
+export const ChartRenderer = ({ data, autoHeight, minHeight }: { data: ChartArtifactData } & ArtifactSizingProps) => {
   const max = Math.max(data.target || 0, ...data.series.map((item) => item.value), 1)
   const colors = ["#4f46e5", "#0ea5e9", "#10b981", "#f59e0b", "#f43f5e"]
   return (
-    <ArtifactFrame className="bg-slate-950 p-16 font-sans text-white">
+    <ArtifactFrame className="bg-slate-950 p-16 font-sans text-white" autoHeight={autoHeight} minHeight={minHeight}>
       <div className="flex h-full flex-col rounded-[28px] border border-white/10 bg-slate-900 p-8">
         <div className="flex items-start justify-between">
           <div>
@@ -194,10 +219,10 @@ export const ChartRenderer = ({ data }: { data: ChartArtifactData }) => {
   )
 }
 
-export const PollRenderer = ({ data }: { data: PollArtifactData }) => {
+export const PollRenderer = ({ data, autoHeight, minHeight }: { data: PollArtifactData } & ArtifactSizingProps) => {
   const total = data.totalVotes || data.options.reduce((sum, option) => sum + option.votes, 0)
   return (
-    <ArtifactFrame className="bg-gradient-to-br from-violet-700 via-indigo-700 to-slate-950 p-16 font-sans text-white">
+    <ArtifactFrame className="bg-gradient-to-br from-violet-700 via-indigo-700 to-slate-950 p-16 font-sans text-white" autoHeight={autoHeight} minHeight={minHeight}>
       <div className="flex h-full flex-col rounded-[32px] border border-white/15 bg-white/10 p-9 shadow-2xl backdrop-blur">
         <div className="text-xs font-bold uppercase tracking-[0.24em] text-violet-200">Ankieta</div>
         <h1 className="mt-4 max-w-3xl text-4xl font-bold leading-tight tracking-tight"><PrivacyText value={data.question} /></h1>
@@ -221,18 +246,18 @@ export const PollRenderer = ({ data }: { data: PollArtifactData }) => {
   )
 }
 
-export const ContractRenderer = ({ data }: { data: ContractArtifactData }) => (
-  <ArtifactFrame className="bg-stone-100 p-16 font-serif">
-    <div className="flex h-full flex-col border border-stone-300 bg-[#fffefa] px-12 py-10 shadow-sm">
+export const ContractRenderer = ({ data, autoHeight, minHeight }: { data: ContractArtifactData } & ArtifactSizingProps) => (
+  <ArtifactFrame className="bg-stone-100 p-16 font-serif" autoHeight={autoHeight} minHeight={minHeight}>
+    <div className={`flex ${autoHeight ? "" : "h-full"} flex-col border border-stone-300 bg-[#fffefa] px-12 py-10 shadow-sm`}>
       <header className="border-b border-stone-300 pb-6 text-center">
         <div className="text-xs font-bold uppercase tracking-[0.25em] text-stone-500"><PrivacyText value={data.documentType} /></div>
         <h1 className="mt-3 text-3xl font-bold text-stone-900"><PrivacyText value={data.title} /></h1>
-        <p className="mt-3 text-sm text-stone-600">Data wejścia w życie: {formatDate(data.effectiveDate)}</p>
+        <p className="mt-3 text-sm text-stone-600">Data wejścia w życie: <PrivacyText value={formatDate(data.effectiveDate)} /></p>
       </header>
       <section className="grid grid-cols-2 gap-8 border-b border-stone-200 py-6 text-sm">
         {data.parties.map((party, index) => <div key={party}><div className="text-xs uppercase tracking-wider text-stone-400">Strona {index + 1}</div><p className="mt-2 font-semibold leading-5 text-stone-800"><PrivacyText value={party} /></p></div>)}
       </section>
-      <section className="flex-1 space-y-5 py-7">
+      <section className={autoHeight ? "space-y-5 py-7" : "flex-1 space-y-5 py-7"}>
         {data.terms.map((term, index) => (
           <div key={term.heading}>
             <h2 className="text-base font-bold text-stone-900">{index + 1}. <PrivacyText value={term.heading} /></h2>
@@ -247,8 +272,8 @@ export const ContractRenderer = ({ data }: { data: ContractArtifactData }) => (
   </ArtifactFrame>
 )
 
-export const CourseSlideRenderer = ({ data }: { data: CourseSlideArtifactData }) => (
-  <ArtifactFrame className="relative bg-[#111827] p-16 font-sans text-white">
+export const CourseSlideRenderer = ({ data, autoHeight, minHeight }: { data: CourseSlideArtifactData } & ArtifactSizingProps) => (
+  <ArtifactFrame className="relative bg-[#111827] p-16 font-sans text-white" autoHeight={autoHeight} minHeight={minHeight}>
     <div className="absolute inset-0 bg-[#111827]" />
     <div className="absolute -right-24 -top-20 h-96 w-96 rounded-full bg-amber-400/20 blur-3xl" />
     <div className="absolute -bottom-28 -left-24 h-80 w-80 rounded-full bg-fuchsia-500/20 blur-3xl" />

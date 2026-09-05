@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { ChatLayout } from "@/components/layout/ChatLayout"
 import { ArtifactCanvas } from "@/artifacts/ArtifactCanvas"
-import { getArtifactDefinition, isArtifactType } from "@/artifacts/registry"
+import { artifactUsesContentHeight, getArtifactDefinition, isArtifactType } from "@/artifacts/registry"
 import { layoutConfigs } from "@/constants/layouts"
 import { exportNodeToImageSequence } from "@/utils/export"
 import type { ArtifactData, ArtifactType } from "@/artifacts/types"
@@ -117,7 +117,7 @@ const getScreenScrollTops = (viewportHeight: number, contentHeight: number) => {
   return positions
 }
 
-const fileNameFor = (format: ExportFormat, index: number, count: number, basename = "nikodem-chat") => {
+const fileNameFor = (format: ExportFormat, index: number, count: number, basename = "czarek-chat") => {
   const extension = format === "jpeg" ? "jpg" : "png"
   return count > 1
     ? `${basename}-${String(index + 1).padStart(2, "0")}.${extension}`
@@ -146,6 +146,7 @@ export const ExtensionRendererApp = () => {
 
   const artifactRequest = isArtifactRenderRequest(request) ? request : null
   const artifactDefinition = artifactRequest ? getArtifactDefinition(artifactRequest.type) : undefined
+  const artifactAutoHeight = Boolean(artifactRequest && artifactUsesContentHeight(artifactRequest.type))
   const settings = useMemo<ExportSettings>(() => {
     const artifactDefaults = artifactDefinition
       ? { width: artifactDefinition.width, height: artifactDefinition.height, format: "png" as const, captureMode: "viewport" as const }
@@ -197,16 +198,29 @@ export const ExtensionRendererApp = () => {
         await nextFrame()
         if (cancelled || !renderRef.current) return
 
+        if (artifactAutoHeight) {
+          // Content-fit artifacts first lay out at their natural height.
+          // Their renderer declares its own minimum height to keep short
+          // payloads readable without restoring a square blank canvas.
+          renderRef.current.style.height = "auto"
+          await nextFrame()
+        }
+
         const probeScroll = probeScrollRef.current
         const probeContent = probeContentRef.current
         const probeHeight = probeRef.current?.clientHeight || settings.height
         const contentHeight = probeContent?.scrollHeight || settings.height
         const viewportHeight = probeScroll?.clientHeight || settings.height
         const chromeHeight = Math.max(0, probeHeight - viewportHeight)
+        const artifactHeight = artifactAutoHeight
+          ? Math.max(1, Math.ceil(renderRef.current.getBoundingClientRect().height))
+          : settings.height
         const fullHeight = artifactRequest
-          ? settings.height
+          ? artifactHeight
           : Math.max(settings.height, Math.ceil(chromeHeight + contentHeight))
-        const resolvedHeight = captureMode === "full" ? fullHeight : settings.height
+        const resolvedHeight = artifactAutoHeight
+          ? fullHeight
+          : captureMode === "full" ? fullHeight : settings.height
         const resolvedSettings = { ...settings, height: resolvedHeight }
         const screenScrollTops = getScreenScrollTops(viewportHeight, contentHeight)
         const renderOptions =
@@ -229,7 +243,7 @@ export const ExtensionRendererApp = () => {
         const images: RendererImage[] = []
         for (const [index, dataUrl] of dataUrls.entries()) {
           images.push({
-            name: fileNameFor(settings.format, index, dataUrls.length, artifactRequest?.variant ? `${artifactRequest.type}-${artifactRequest.variant}` : artifactRequest?.type || "nikodem-chat"),
+            name: fileNameFor(settings.format, index, dataUrls.length, artifactRequest?.variant ? `${artifactRequest.type}-${artifactRequest.variant}` : artifactRequest?.type || "czarek-chat"),
             mimeType: settings.format === "jpeg" ? "image/jpeg" : "image/png",
             buffer: await dataUrlToArrayBuffer(dataUrl),
           })
@@ -257,7 +271,7 @@ export const ExtensionRendererApp = () => {
     return () => {
       cancelled = true
     }
-  }, [artifactRequest, captureMode, request, settings])
+  }, [artifactAutoHeight, artifactRequest, captureMode, request, settings])
 
   if (!request) {
     return <div data-xcs-renderer-state="ready">{error}</div>
@@ -308,11 +322,11 @@ export const ExtensionRendererApp = () => {
           left: 0,
           top: 0,
           width: settings.width,
-          height: settings.height,
+          height: artifactAutoHeight ? "auto" : settings.height,
         }}
       >
         {artifactRequest ? (
-          <ArtifactCanvas type={artifactRequest.type} data={artifactRequest.data} variant={artifactRequest.variant} maskSeed={artifactRequest.maskSeed} />
+          <ArtifactCanvas type={artifactRequest.type} data={artifactRequest.data} variant={artifactRequest.variant} maskSeed={artifactRequest.maskSeed} autoHeight={artifactAutoHeight} minHeight={artifactDefinition?.minHeight} />
         ) : conversation && commonProps ? (
           <ChatLayout
             {...commonProps}

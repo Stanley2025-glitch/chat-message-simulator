@@ -89,6 +89,10 @@ export const visualVariants: Partial<Record<ArtifactType, ArtifactVariant[]>> = 
     visual("investor", "Investor", "Data-first property deal view.", { background: "#f3f6f8", surface: "#ffffff", accent: "#1d4e70", borderRadius: "8px", density: "compact", fontMono: "'IBM Plex Mono', monospace" }),
     visual("dark-property", "Dark Property", "Premium commercial listing.", { background: "#17191b", surface: "#222528", surfaceSecondary: "#2b2e31", text: "#f5f3ef", textMuted: "#aaa59c", accent: "#c3a469", border: "#3a3d40", borderRadius: "10px", fontHeading: "Georgia, serif" }),
   ],
+  "trade-result": [
+    visual("xtb-dark", "Dark Trading", "Anonymous closed-position result.", { background: "#0b1013", surface: "#151c20", surfaceSecondary: "#1d272c", text: "#f4f8f8", textMuted: "#91a3a7", accent: "#17b7a3", positive: "#2bd68f", negative: "#f2636e", border: "#2b383d", borderRadius: "8px", fontHeading: "'Space Grotesk', Arial, sans-serif", fontBody: "'IBM Plex Sans', Arial, sans-serif", fontMono: "'IBM Plex Mono', 'Courier New', monospace", density: "compact", shadow: "none" }),
+    visual("xtb-light", "Light Trading", "Clean anonymous trading-result card.", { background: "#eef3f3", surface: "#ffffff", surfaceSecondary: "#e3ecec", text: "#152326", textMuted: "#6f8184", accent: "#078f81", positive: "#087f61", negative: "#d84b58", border: "#cbd8d8", borderRadius: "8px", fontHeading: "'Space Grotesk', Arial, sans-serif", fontBody: "'IBM Plex Sans', Arial, sans-serif", fontMono: "'IBM Plex Mono', 'Courier New', monospace", density: "compact", shadow: "subtle" }),
+  ],
 }
 
 export const getArtifactVariant = (type: ArtifactType, variant?: string) => {

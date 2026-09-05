@@ -17,6 +17,7 @@ export type ArtifactType =
   | "review"
   | "activity-feed"
   | "property-listing"
+  | "trade-result"
 
 export type ArtifactCategory =
   | "Personal"
@@ -25,6 +26,13 @@ export type ArtifactCategory =
   | "Operations"
   | "Content"
   | "Communication"
+
+/**
+ * Defines how an artifact uses its export canvas.  Content and adaptive
+ * artifacts are rendered at their natural height instead of being padded to
+ * a square.  Canvas artifacts deliberately keep their fixed composition.
+ */
+export type ArtifactExportMode = "canvas" | "content" | "adaptive"
 
 export interface ArtifactVariantTokens {
   background: string
@@ -233,6 +241,24 @@ export interface PropertyListingArtifactData {
   metrics: Array<{ label: string; value: string }>
 }
 
+/**
+ * Anonymous closed-position result. There is deliberately no instrument,
+ * ticker, company, account or broker field: the artifact is safe to share as
+ * a generic trading-result card.
+ */
+export interface TradeResultArtifactData {
+  outcome: "profit" | "loss"
+  position: "sell" | "short"
+  returnPct: number
+  pnl: number
+  entryPrice: number
+  exitPrice: number
+  duration: string
+  closedAt: string
+  fees?: number
+  riskReward?: string
+}
+
 export type ArtifactData =
   | CalendarArtifactData
   | InvoiceArtifactData
@@ -252,6 +278,7 @@ export type ArtifactData =
   | ReviewArtifactData
   | ActivityFeedArtifactData
   | PropertyListingArtifactData
+  | TradeResultArtifactData
 
 export interface ArtifactDefinition<T extends ArtifactData = ArtifactData> {
   type: ArtifactType
@@ -260,6 +287,9 @@ export interface ArtifactDefinition<T extends ArtifactData = ArtifactData> {
   description: string
   width: number
   height: number
+  exportMode?: ArtifactExportMode
+  /** A lower bound for content-fit exports, in CSS pixels. */
+  minHeight?: number
   variants?: ArtifactVariant[]
   defaultVariant?: string
   exampleData: T

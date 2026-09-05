@@ -18,6 +18,7 @@ import {
   PropertyListingRenderer,
   ReviewRenderer,
   SpreadsheetRenderer,
+  TradeResultRenderer,
   TodoRenderer,
 } from "@/artifacts/VisualTemplateRenderers"
 import { getArtifactVariant } from "@/artifacts/visualVariants"
@@ -40,52 +41,55 @@ import type {
   ReviewArtifactData,
   ReceiptArtifactData,
   SpreadsheetArtifactData,
+  TradeResultArtifactData,
   TodoArtifactData,
   DashboardArtifactData,
   CrmContactArtifactData,
   DueDiligenceArtifactData,
 } from "@/artifacts/types"
 
-export const ArtifactCanvas = ({ type, data, variant: variantId, maskSeed }: { type: ArtifactType; data: ArtifactData; variant?: string; maskSeed?: string }) => {
+export const ArtifactCanvas = ({ type, data, variant: variantId, maskSeed, autoHeight = false, minHeight }: { type: ArtifactType; data: ArtifactData; variant?: string; maskSeed?: string; autoHeight?: boolean; minHeight?: number }) => {
   const variant = getArtifactVariant(type, variantId)
   const renderer = (() => {
     switch (type) {
     case "calendar":
-      return <CalendarRenderer data={data as CalendarArtifactData} />
+      return <CalendarRenderer data={data as CalendarArtifactData} autoHeight={autoHeight} minHeight={minHeight} />
     case "invoice":
-      return <InvoiceRenderer data={data as InvoiceArtifactData} />
+      return <InvoiceRenderer data={data as InvoiceArtifactData} autoHeight={autoHeight} minHeight={minHeight} />
     case "receipt":
-      return <ReceiptRenderer data={data as ReceiptArtifactData} />
+      return <ReceiptRenderer data={data as ReceiptArtifactData} autoHeight={autoHeight} minHeight={minHeight} />
     case "chart":
-      return <ChartRenderer data={data as ChartArtifactData} />
+      return <ChartRenderer data={data as ChartArtifactData} autoHeight={autoHeight} minHeight={minHeight} />
     case "poll":
-      return <PollRenderer data={data as PollArtifactData} />
+      return <PollRenderer data={data as PollArtifactData} autoHeight={autoHeight} minHeight={minHeight} />
     case "contract":
-      return <ContractRenderer data={data as ContractArtifactData} />
+      return <ContractRenderer data={data as ContractArtifactData} autoHeight={autoHeight} minHeight={minHeight} />
     case "course-slide":
-      return <CourseSlideRenderer data={data as CourseSlideArtifactData} />
+      return <CourseSlideRenderer data={data as CourseSlideArtifactData} autoHeight={autoHeight} minHeight={minHeight} />
     case "notes":
-      return <NotesRenderer data={data as NotesArtifactData} variant={variant} />
+      return <NotesRenderer data={data as NotesArtifactData} variant={variant} autoHeight={autoHeight} minHeight={minHeight} />
     case "todo":
-      return <TodoRenderer data={data as TodoArtifactData} variant={variant} />
+      return <TodoRenderer data={data as TodoArtifactData} variant={variant} autoHeight={autoHeight} minHeight={minHeight} />
     case "spreadsheet":
-      return <SpreadsheetRenderer data={data as SpreadsheetArtifactData} variant={variant} />
+      return <SpreadsheetRenderer data={data as SpreadsheetArtifactData} variant={variant} autoHeight={autoHeight} minHeight={minHeight} />
     case "dashboard":
-      return <DashboardRenderer data={data as DashboardArtifactData} variant={variant} />
+      return <DashboardRenderer data={data as DashboardArtifactData} variant={variant} autoHeight={autoHeight} minHeight={minHeight} />
     case "crm-contact":
-      return <CrmContactRenderer data={data as CrmContactArtifactData} variant={variant} />
+      return <CrmContactRenderer data={data as CrmContactArtifactData} variant={variant} autoHeight={autoHeight} minHeight={minHeight} />
     case "due-diligence":
-      return <DueDiligenceRenderer data={data as DueDiligenceArtifactData} variant={variant} />
+      return <DueDiligenceRenderer data={data as DueDiligenceArtifactData} variant={variant} autoHeight={autoHeight} minHeight={minHeight} />
     case "investment-memo":
-      return <InvestmentMemoRenderer data={data as InvestmentMemoArtifactData} variant={variant} />
+      return <InvestmentMemoRenderer data={data as InvestmentMemoArtifactData} variant={variant} autoHeight={autoHeight} minHeight={minHeight} />
     case "kanban":
-      return <KanbanRenderer data={data as KanbanArtifactData} variant={variant} />
+      return <KanbanRenderer data={data as KanbanArtifactData} variant={variant} autoHeight={autoHeight} minHeight={minHeight} />
     case "review":
-      return <ReviewRenderer data={data as ReviewArtifactData} variant={variant} />
+      return <ReviewRenderer data={data as ReviewArtifactData} variant={variant} autoHeight={autoHeight} minHeight={minHeight} />
     case "activity-feed":
-      return <ActivityFeedRenderer data={data as ActivityFeedArtifactData} variant={variant} />
+      return <ActivityFeedRenderer data={data as ActivityFeedArtifactData} variant={variant} autoHeight={autoHeight} minHeight={minHeight} />
     case "property-listing":
-      return <PropertyListingRenderer data={data as PropertyListingArtifactData} variant={variant} />
+      return <PropertyListingRenderer data={data as PropertyListingArtifactData} variant={variant} autoHeight={autoHeight} minHeight={minHeight} />
+    case "trade-result":
+      return <TradeResultRenderer data={data as TradeResultArtifactData} variant={variant} autoHeight={autoHeight} minHeight={minHeight} />
     }
   })()
 
