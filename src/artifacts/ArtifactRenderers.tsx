@@ -332,7 +332,7 @@ export const IPhoneNotificationRenderer = ({ data, variant, autoHeight, minHeigh
     >
       <div className="relative z-10 flex h-full flex-col">
         <div className="flex items-center justify-between px-2 text-[13px] font-semibold" style={{ color: tokens.text }}>
-          <span>9:41</span>
+          <span><PrivacyText value={data.time} /></span>
           <div className="flex items-center gap-1.5 text-[11px]">
             <span className="tracking-[-0.24em]">▮▮▮</span>
             <span className="text-[14px]">⌁</span>

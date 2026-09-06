@@ -53,8 +53,8 @@ export const dateAtOffset = (days: number, from = new Date()) => {
 }
 
 export const timeBeforeCurrentHour = (index: number, now = new Date()) => {
-  const currentHour = now.getHours()
-  if (currentHour <= 0) return "00:00"
-  const minutes = Math.max(0, (currentHour - 1) * 60 + 50 - Math.max(0, index) * 17)
-  return `${pad(Math.floor(minutes / 60))}:${pad(minutes % 60)}`
+  const date = new Date(now)
+  date.setHours(date.getHours() - 1)
+  date.setMinutes(50 - Math.max(0, index) * 17)
+  return localTime(date)
 }
