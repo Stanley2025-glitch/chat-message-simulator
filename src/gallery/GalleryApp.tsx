@@ -1,4 +1,4 @@
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { CheckCircle2, Download, Expand, Loader2, PanelTop, Sparkles, XCircle } from "lucide-react"
 import { rendererGalleryRegistry, type RendererGalleryEntry } from "@/artifacts/registry"
 import type { ChatExampleData } from "@/artifacts/ChatExampleRenderer"
@@ -33,6 +33,8 @@ type GalleryDraft = {
 type GalleryGenerationResult = {
   template_id?: string
   template_variant?: string | null
+  contact_id?: string | null
+  contact?: { name?: string; relationship?: string; platform?: string } | null
   schema?: unknown
   draft?: GalleryDraft
   prompt?: { system?: string; user?: string }
@@ -55,6 +57,14 @@ type GalleryRun = {
 
 type ExtensionBrowser = {
   runtime?: { sendMessage?: (message: unknown) => Promise<unknown> }
+}
+
+type GalleryContact = {
+  id: string
+  name: string
+  relationship: string
+  platforms: string[]
+  adult_only?: boolean
 }
 
 const getExtensionBrowser = () =>
@@ -146,14 +156,45 @@ export const GalleryApp = () => {
   const [variantByEntry, setVariantByEntry] = useState<Record<string, string>>({})
   const [generatedDataByEntry, setGeneratedDataByEntry] = useState<Record<string, GalleryData>>({})
   const [runByEntry, setRunByEntry] = useState<Record<string, GalleryRun>>({})
+  const [contactsByPlatform, setContactsByPlatform] = useState<Record<string, GalleryContact[]>>({})
+  const [contactIdByEntry, setContactIdByEntry] = useState<Record<string, string>>({})
   const [exportingId, setExportingId] = useState<string | null>(null)
   const [exportError, setExportError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const sendMessage = getExtensionBrowser()?.runtime?.sendMessage
+    if (!sendMessage) return
+    let cancelled = false
+    void sendMessage({ type: "GET_GALLERY_CHAT_CONTACTS" }).then((response) => {
+      const contacts = (response as { ok?: boolean; contacts?: GalleryContact[] })?.contacts
+      if (cancelled || !Array.isArray(contacts)) return
+      const grouped = contacts.reduce<Record<string, GalleryContact[]>>((groups, contact) => {
+        for (const platform of contact.platforms || []) {
+          groups[platform] = [...(groups[platform] || []), contact]
+        }
+        return groups
+      }, {})
+      setContactsByPlatform(grouped)
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, [])
 
   const activeVariantFor = (entry: RendererGalleryEntry) =>
     variantByEntry[entry.id] || entry.defaultVariant || entry.variants?.[0]?.id
 
   const activeDataFor = (entry: RendererGalleryEntry) =>
     generatedDataByEntry[entry.id] || entry.exampleData
+
+  const contactOptionsFor = (entry: RendererGalleryEntry, variant?: string) =>
+    entry.templateId === "chat_screenshot" ? contactsByPlatform[variant || "whatsapp"] || [] : []
+
+  const contactKeyFor = (entry: RendererGalleryEntry, variant?: string) =>
+    `${entry.id}:${variant || "default"}`
+
+  const activeContactIdFor = (entry: RendererGalleryEntry, variant?: string) => {
+    const options = contactOptionsFor(entry, variant)
+    return contactIdByEntry[contactKeyFor(entry, variant)] || options[0]?.id || ""
+  }
 
   const exportEntry = async (entry: RendererGalleryEntry, node: HTMLDivElement | null, variant?: string) => {
     if (!node) return
@@ -173,6 +214,7 @@ export const GalleryApp = () => {
   const generateEntry = async (entry: RendererGalleryEntry) => {
     if (!entry.templateId) return
     const activeVariant = activeVariantFor(entry)
+    const activeContactId = activeContactIdFor(entry, activeVariant)
     setRunByEntry((current) => ({ ...current, [entry.id]: { status: "running" } }))
     try {
       const runtime = getExtensionBrowser()?.runtime
@@ -181,6 +223,7 @@ export const GalleryApp = () => {
         type: "GENERATE_GALLERY_TEMPLATE",
         templateId: entry.templateId,
         variant: activeVariant,
+        ...(entry.templateId === "chat_screenshot" ? { contactId: activeContactId } : {}),
       }) as { ok?: boolean; error?: string; result?: GalleryGenerationResult; diagnostics?: GalleryRun["diagnostics"] }
       if (!response?.ok || !response.result?.draft) {
         setRunByEntry((current) => ({
@@ -211,7 +254,7 @@ export const GalleryApp = () => {
           <div>
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-indigo-600"><PanelTop className="h-4 w-4" /> X Content Studio</div>
             <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Renderery i przykłady</h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Żywy katalog rendererów. Przycisk „Generuj szablon” wywołuje prawdziwego Writera LLM z pełnym kontraktem danych, waliduje wynik i sprawdza renderowanie w karcie rozszerzenia.</p>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Żywy katalog rendererów. „Generuj tekst + obraz” uruchamia tę samą ścieżkę writera, walidacji i renderowania, którą wykorzystuje wtyczka po harvestcie.</p>
           </div>
           <div className="rounded-2xl bg-slate-900 px-4 py-3 text-sm text-slate-200"><strong className="text-white">{rendererGalleryRegistry.length}</strong> rendererów · LLM smoke test · PNG</div>
         </header>
@@ -260,11 +303,33 @@ export const GalleryApp = () => {
                       ))}
                     </div>
                   ) : null}
+                  {entry.templateId === "chat_screenshot" ? (() => {
+                    const contactOptions = contactOptionsFor(entry, activeVariant)
+                    const activeContactId = activeContactIdFor(entry, activeVariant)
+                    return (
+                      <label className="block text-xs font-semibold text-slate-600">
+                        Kontakt testowy
+                        <select
+                          className="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-normal text-slate-900 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                          value={activeContactId}
+                          onChange={(event) => setContactIdByEntry((current) => ({ ...current, [contactKeyFor(entry, activeVariant)]: event.target.value }))}
+                          disabled={!contactOptions.length || run?.status === "running"}
+                        >
+                          {!contactOptions.length ? <option value="">Ładowanie kontaktów…</option> : null}
+                          {contactOptions.map((contact) => (
+                            <option key={contact.id} value={contact.id}>
+                              {contact.name} · {contact.relationship}{contact.adult_only ? " · 21+" : ""}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    )
+                  })() : null}
                   {run ? (
                     <div className={run.status === "error" ? "rounded-2xl border border-red-200 bg-red-50 p-3 text-xs text-red-700" : "rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800"} role={run.status === "error" ? "alert" : "status"}>
                       <div className="flex items-center gap-2 font-bold">
                         {run.status === "running" ? <Loader2 className="h-4 w-4 animate-spin" /> : run.status === "success" ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
-                        {run.status === "running" ? "LLM generuje…" : run.status === "success" ? `LLM OK · renderer ${run.result?.render?.images || 0} PNG` : "LLM / schema odrzucone"}
+                        {run.status === "running" ? "LLM generuje tekst + obraz…" : run.status === "success" ? `OK · ${run.result?.render?.type || "renderer"} · ${run.result?.render?.width || 0}×${run.result?.render?.height || 0}` : "LLM / schema odrzucone"}
                       </div>
                       {run.error ? <p className="mt-1 break-words">{run.error}</p> : null}
                       {run.status === "success" && run.result?.draft?.text ? <p className="mt-2 line-clamp-3 text-emerald-950">„{run.result.draft.text}”</p> : null}
@@ -273,7 +338,7 @@ export const GalleryApp = () => {
                   ) : null}
                   <div className="flex flex-wrap gap-2">
                     <Button variant="outline" size="sm" onClick={() => setSelected(entry)}><Expand className="h-4 w-4" /> Pełny podgląd</Button>
-                    {generatable ? <Button size="sm" onClick={() => void generateEntry(entry)} disabled={run?.status === "running" || exportingId !== null}><Sparkles className="h-4 w-4" /> Generuj szablon</Button> : null}
+                    {generatable ? <Button size="sm" onClick={() => void generateEntry(entry)} disabled={run?.status === "running" || exportingId !== null}><Sparkles className="h-4 w-4" /> Generuj tekst + obraz</Button> : null}
                     <Button variant="secondary" size="sm" onClick={() => void exportEntry(entry, canvasRefs.current[entry.id], activeVariant)} disabled={exportingId !== null}>
                       {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
                       PNG
@@ -299,6 +364,24 @@ export const GalleryApp = () => {
                   <DialogTitle>{selected.label}</DialogTitle>
                   <DialogDescription>{selected.category} · {selected.width} × {selected.height} · real renderer preview</DialogDescription>
                 </DialogHeader>
+                {selected.templateId === "chat_screenshot" ? (
+                  <label className="block max-w-xl text-xs font-semibold text-slate-600">
+                    Kontakt testowy
+                    <select
+                      className="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-normal text-slate-900 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                      value={activeContactIdFor(selected, activeVariant)}
+                      onChange={(event) => setContactIdByEntry((current) => ({ ...current, [contactKeyFor(selected, activeVariant)]: event.target.value }))}
+                      disabled={!contactOptionsFor(selected, activeVariant).length || run?.status === "running"}
+                    >
+                      {!contactOptionsFor(selected, activeVariant).length ? <option value="">Ładowanie kontaktów…</option> : null}
+                      {contactOptionsFor(selected, activeVariant).map((contact) => (
+                        <option key={contact.id} value={contact.id}>
+                          {contact.name} · {contact.relationship}{contact.adult_only ? " · 21+" : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ) : null}
                 <div className="flex min-w-fit justify-center rounded-2xl bg-slate-100 p-5">
                   <div ref={fullPreviewRef} style={{ width: selected.width, height: selected.height }}>
                     {selected.render(data, activeVariant)}
@@ -319,7 +402,11 @@ export const GalleryApp = () => {
                       </details>
                     </div>
                     <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs">
-                      <div className="font-bold text-slate-900">Kontrakt testu</div>
+                      <div className="font-bold text-slate-900">Raport testu</div>
+                      <p className="mt-2 text-slate-600">Status: <strong className="text-emerald-700">OK</strong> · renderer: <code>{run.result.render?.type || "—"}</code> · obrazów: <code>{run.result.render?.images || 0}</code></p>
+                      <p className="mt-1 text-slate-600">Rozmiar: <code>{run.result.render?.width || 0} × {run.result.render?.height || 0}</code>{run.result.contact ? <> · kontakt: <code>{run.result.contact.name}</code></> : null}</p>
+                      <p className="mt-1 text-slate-600">Audyt lokalny: <strong className={auditCodes(run).length ? "text-amber-700" : "text-emerald-700"}>{auditCodes(run).length ? auditCodes(run).join(" · ") : "brak twardych błędów"}</strong></p>
+                      <div className="mt-4 font-bold text-slate-900">Kontrakt danych</div>
                       <p className="mt-2 text-slate-600">Typ: <code>{run.result.template_id}</code> · wariant: <code>{run.result.template_variant || "brak"}</code></p>
                       <pre className="mt-2 max-h-80 overflow-auto rounded-xl bg-white p-3 text-[10px]">{jsonPreview(run.result.schema)}</pre>
                     </div>
@@ -337,7 +424,7 @@ export const GalleryApp = () => {
                   </div>
                 ) : null}
                 <div className="flex flex-wrap justify-end gap-2">
-                  {selected.templateId ? <Button onClick={() => void generateEntry(selected)} disabled={run?.status === "running" || exportingId !== null}><Sparkles className="h-4 w-4" /> Generuj szablon</Button> : null}
+                  {selected.templateId ? <Button onClick={() => void generateEntry(selected)} disabled={run?.status === "running" || exportingId !== null}><Sparkles className="h-4 w-4" /> Generuj tekst + obraz</Button> : null}
                   <Button variant="outline" onClick={() => void exportEntry(selected, fullPreviewRef.current, activeVariant)} disabled={exportingId !== null}>
                     {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
                     Pobierz PNG
